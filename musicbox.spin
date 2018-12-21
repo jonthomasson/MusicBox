@@ -30,13 +30,16 @@ OBJ
 
     wav: "V2-WAV_DACEngine.spin"
     sd: "fsrw" 
+    rr: "RealRandom"
 VAR
     byte tbuf[14]  
+    'long rand
     long file_count
     long files[MAX_FILES * ROWS_PER_FILE] 'byte array to hold index and filename
-PUB main
+PUB main | rand
 
     ser.Start(rx, tx, 0, 115200)
+   
 
     waitcnt((clkfreq * 5) + cnt)
         
@@ -51,10 +54,14 @@ PUB main
       
         file_count++
     sd.unmount 'unmount the sd card
+               '
+    'ser.Dec (file_count)
          
     'now we need to get a random file name to pass to wav player
-             
-                 
+    'ser.Str (@files[ROWS_PER_FILE * 1])
+    'repeat 15 - strsize( @files[ROWS_PER_FILE * count2] )     
+       
+      
     if(wav.begin(lPin, rPin, doPin, clkPin, diPin, csPin, wpPin, cdPin))
         ser.Str(string("Start: Success", 10))
 
@@ -63,7 +70,15 @@ PUB main
 
     wav.setLeftVolume(2)
     wav.setRightVolume(2)
-    result := \wav.play(string("dzone.wav"))
+    
+    'start RealRandom
+    rr.start 
+    'rand := rr.random >> 1 'shifting bits over one to ensure non signed
+    rand := (rr.random >> 1)//(file_count) 
+    
+    rr.stop
+    ser.Dec (rand)
+    result := \wav.play(@files[ROWS_PER_FILE * rand])
     
     if(wav.playErrorNum)
             ser.Str(string("WAV Error: "))
