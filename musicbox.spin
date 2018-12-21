@@ -41,7 +41,19 @@ VAR
     long files[MAX_FILES * ROWS_PER_FILE] 'byte array to hold index and filename
 PUB main 
     dira[wakeup_pin]~ 'set wakeup_pin to input
-    is_awake := 0                
+    is_awake := 0            
+    
+    sd.mount(doPin) ' Mount SD card
+    sd.opendir    'open root directory for reading
+                  '
+    repeat while 0 == sd.nextfile(@tbuf)    
+        'move tbuf to files. each file takes up 4 rows of files
+        'each row can hold 4 bytes (32 bit long / 8bit bytes = 4)
+        'since the short file name needs 13 bytes (8(name)+1(dot)+3(extension)+1(zero terminate))
+        bytemove(@files[ROWS_PER_FILE*file_count],@tbuf,strsize(@tbuf))
+      
+        file_count++
+    sd.unmount 'unmount the sd card    
     
     repeat
         if(ina[wakeup_pin] == 1 and is_awake == 0)  'lid has been opened, start cogs, play music etc...
@@ -63,23 +75,13 @@ pri stop_song
 pri play_song | rand
     ser.Start(rx, tx, 0, 115200)
    
-    files := 0
-    file_count := 0
-    tbuf := 0
+    'files := 0
+    'file_count := 0
+    'tbuf := 0
     rand := 0
     waitcnt((clkfreq * 5) + cnt)
         
-    sd.mount(doPin) ' Mount SD card
-    sd.opendir    'open root directory for reading
-                  '
-    repeat while 0 == sd.nextfile(@tbuf)    
-        'move tbuf to files. each file takes up 4 rows of files
-        'each row can hold 4 bytes (32 bit long / 8bit bytes = 4)
-        'since the short file name needs 13 bytes (8(name)+1(dot)+3(extension)+1(zero terminate))
-        bytemove(@files[ROWS_PER_FILE*file_count],@tbuf,strsize(@tbuf))
-      
-        file_count++
-    sd.unmount 'unmount the sd card
+
                '
     'ser.Dec (file_count)
          
@@ -94,8 +96,8 @@ pri play_song | rand
     else
         ser.Str(string("Start: Failure", 10))
 
-    wav.setLeftVolume(2)
-    wav.setRightVolume(2)
+    wav.setLeftVolume(1)
+    wav.setRightVolume(1)
     
     'start RealRandom
     rr.start 
