@@ -20,6 +20,8 @@ CON
 
     wpPin = -1
     cdPin = -1
+    
+    wakeup_pin = 28
 CON
     ROWS_PER_FILE = 4 'number of longs it takes to store 1 file name
     MAX_FILES = 300 'limiting to 300 games for now due to memory limits
@@ -33,14 +35,38 @@ OBJ
     rr: "RealRandom"
 VAR
     byte tbuf[14]  
+    word is_awake
     'long rand
     long file_count
     long files[MAX_FILES * ROWS_PER_FILE] 'byte array to hold index and filename
-PUB main | rand
-
+PUB main 
+    dira[wakeup_pin]~ 'set wakeup_pin to input
+    is_awake := 0                
+    
+    repeat
+        if(ina[wakeup_pin] == 1 and is_awake == 0)  'lid has been opened, start cogs, play music etc...
+            is_awake := 1
+            
+            play_song
+        elseif(ina[wakeup_pin] == 0 and is_awake == 1) 'lid has been closed, stop cogs, stop music etc...
+            is_awake := 0
+            
+            stop_song
+            
+            
+pri stop_song
+    ser.Stop
+    wav.setPause(true)
+    wav.overrideSong(true)     
+    wav.end  
+        
+pri play_song | rand
     ser.Start(rx, tx, 0, 115200)
    
-
+    files := 0
+    file_count := 0
+    tbuf := 0
+    rand := 0
     waitcnt((clkfreq * 5) + cnt)
         
     sd.mount(doPin) ' Mount SD card
@@ -73,8 +99,8 @@ PUB main | rand
     
     'start RealRandom
     rr.start 
-    'rand := rr.random >> 1 'shifting bits over one to ensure non signed
-    rand := (rr.random >> 1)//(file_count) 
+    rand := (rr.random >> 1)//(file_count) 'shifting bits over one to ensure non signed
+                                           'generate a random number between 0 and file_count
     
     rr.stop
     ser.Dec (rand)
@@ -84,8 +110,4 @@ PUB main | rand
             ser.Str(string("WAV Error: "))
             ser.Str(result)
             ser.Tx(10)
-            
-   
-        
-
        
