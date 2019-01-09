@@ -24,7 +24,7 @@ CON
     wakeup_pin = 5
     
     LEDS = 28
-    STRIP_LEN =1                                              
+    STRIP_LEN =4                                              
     PIX_BITS  = 24  
 CON
     ROWS_PER_FILE = 4 'number of longs it takes to store 1 file name
@@ -87,6 +87,12 @@ pri setup
     longfill(@pixbuf1, $20_00_00_00, STRIP_LEN)                   ' prefill buffers
     longfill(@pixbuf2, $00_20_00_00, STRIP_LEN)
     longfill(@pixbuf3, $00_00_20_00, STRIP_LEN) 
+    
+    'set led strip off
+    strip.start_2812b(@pixbuf1, STRIP_LEN, LEDS, 1_0)             ' start pixel driver for WS2812b 
+    strip.clear
+    time.pause(100)
+    strip.stop
     
 
 pri rainbow(ms) | pos, ch
